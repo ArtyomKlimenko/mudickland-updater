@@ -21,9 +21,11 @@ public sealed class MainForm : Form
     private readonly Button _cancelButton = new();
     private readonly Button _openLauncherButton = new();
     private readonly Button _openFolderButton = new();
+    private readonly Button _logsButton = new();
 
     private CancellationTokenSource? _cts;
     private UpdatePlan? _lastPlan;
+    private string _activeOperation = "idle";
 
     public MainForm()
     {
@@ -72,7 +74,15 @@ public sealed class MainForm : Form
             Text = "This updater only manages pack files. It does not handle Minecraft accounts or authentication.",
             AutoSize = true,
             Dock = DockStyle.Fill,
-            Padding = new Padding(0, 4, 0, 10)
+            Padding = new Padding(0, 4, 0, 4)
+        });
+
+        root.Controls.Add(new Label
+        {
+            Text = "Telemetry is optional and limited to updater events, app version, pack version, status, and a random install id. It never sends process lists, accounts, tokens, hardware ids, nicknames, or folder contents.",
+            AutoSize = true,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(0, 0, 0, 10)
         });
 
         root.Controls.Add(MakeLabeledRow("Install directory", _installDir, ("Browse", BrowseInstallDir)));
@@ -93,10 +103,11 @@ public sealed class MainForm : Form
         ConfigureButton(_checkButton, "Check", async (_, _) => await RunCheckAsync());
         ConfigureButton(_updateButton, "Update", async (_, _) => await RunUpdateAsync());
         ConfigureButton(_cancelButton, "Cancel", (_, _) => _cts?.Cancel());
-        ConfigureButton(_openLauncherButton, "Open Launcher", (_, _) => OpenLauncher());
+        ConfigureButton(_openLauncherButton, "Open Launcher", async (_, _) => await OpenLauncherAsync());
         ConfigureButton(_openFolderButton, "Open Folder", (_, _) => OpenInstallFolder());
+        ConfigureButton(_logsButton, "Logs", (_, _) => OpenLogs());
 
-        buttons.Controls.AddRange([_checkButton, _updateButton, _cancelButton, _openLauncherButton, _openFolderButton]);
+        buttons.Controls.AddRange([_checkButton, _updateButton, _cancelButton, _openLauncherButton, _openFolderButton, _logsButton]);
         root.Controls.Add(buttons);
 
         _progress.Dock = DockStyle.Fill;
@@ -210,7 +221,7 @@ public sealed class MainForm : Form
             Append($"Need download: {_lastPlan.Downloads.Count} files, {FormatBytes(_lastPlan.BytesToDownload)}");
             Append($"Need delete: {_lastPlan.Deletes.Count} files");
             await NewTelemetryClient().SendAsync("check", "success", _lastPlan.Manifest.Version, cancellationToken);
-        });
+        }, "check");
     }
 
     private async Task RunUpdateAsync()
@@ -224,17 +235,18 @@ public sealed class MainForm : Form
             await engine.ApplyPlanAsync(_installDir.Text, plan, progress, cancellationToken);
             _state.LastReleaseNumbers[plan.Manifest.PackId] = plan.Manifest.ReleaseNumber;
             _stateStore.Save(_state);
-            await NewTelemetryClient().SendAsync("update", "success", plan.Manifest.Version, cancellationToken);
+            await NewTelemetryClient().SendAsync("update_success", "success", plan.Manifest.Version, cancellationToken);
             _lastPlan = null;
-        });
+        }, "update");
     }
 
-    private async Task RunWithUiLockAsync(Func<CancellationToken, Task> action)
+    private async Task RunWithUiLockAsync(Func<CancellationToken, Task> action, string operation)
     {
         SetBusy(true);
         _cts = new CancellationTokenSource();
         try
         {
+            _activeOperation = operation;
             await action(_cts.Token);
         }
         catch (OperationCanceledException)
@@ -249,7 +261,8 @@ public sealed class MainForm : Form
             _logger.Write(ex.ToString());
             try
             {
-                await NewTelemetryClient().SendAsync("error", ex.GetType().Name, "", CancellationToken.None);
+                var eventName = _activeOperation == "update" ? "update_failed" : "check";
+                await NewTelemetryClient().SendAsync(eventName, ex.GetType().Name, "", CancellationToken.None);
             }
             catch
             {
@@ -260,6 +273,7 @@ public sealed class MainForm : Form
         {
             _cts.Dispose();
             _cts = null;
+            _activeOperation = "idle";
             SetBusy(false);
         }
     }
@@ -293,6 +307,7 @@ public sealed class MainForm : Form
         _cancelButton.Enabled = busy;
         _openLauncherButton.Enabled = !busy;
         _openFolderButton.Enabled = !busy;
+        _logsButton.Enabled = !busy;
     }
 
     private void Append(string message)
@@ -308,15 +323,17 @@ public sealed class MainForm : Form
         _logger.Write(message);
     }
 
-    private void OpenLauncher()
+    private async Task OpenLauncherAsync()
     {
         if (!string.IsNullOrWhiteSpace(_config.LauncherPath) && File.Exists(_config.LauncherPath))
         {
             Process.Start(new ProcessStartInfo(_config.LauncherPath) { UseShellExecute = true });
+            await NewTelemetryClient().SendAsync("open_launcher", "configured", "", CancellationToken.None);
             return;
         }
 
         OpenInstallFolder();
+        await NewTelemetryClient().SendAsync("open_launcher", "not_configured", "", CancellationToken.None);
         MessageBox.Show(
             this,
             "Launcher path is not configured. Open your Minecraft launcher manually and set its game directory to the selected install folder.",
@@ -329,6 +346,16 @@ public sealed class MainForm : Form
     {
         Directory.CreateDirectory(_installDir.Text);
         Process.Start(new ProcessStartInfo(_installDir.Text) { UseShellExecute = true });
+    }
+
+    private void OpenLogs()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_logger.LogPath)!);
+        if (!File.Exists(_logger.LogPath))
+        {
+            File.WriteAllText(_logger.LogPath, "");
+        }
+        Process.Start(new ProcessStartInfo(_logger.LogPath) { UseShellExecute = true });
     }
 
     private static void OpenUrl(string url)

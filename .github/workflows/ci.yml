@@ -14,7 +14,9 @@ jobs:
         with:
           dotnet-version: 8.0.x
       - name: Build updater
-        run: dotnet build src/MuDickLand.Updater/MuDickLand.Updater.csproj -c Release
+        run: dotnet build src/MuDickLand.Updater/MuDickLand.Updater.csproj -c Release -p:EnableWindowsTargeting=true
+      - name: Run updater core tests
+        run: dotnet run --project tests/MuDickLand.Updater.Tests/MuDickLand.Updater.Tests.csproj -c Release -p:EnableWindowsTargeting=true
 
   test-manifest-builder:
     runs-on: ubuntu-latest
@@ -25,4 +27,3 @@ jobs:
           python-version: "3.12"
       - name: Run manifest builder tests
         run: python -m unittest discover -s tests -p "test_*.py"
-
