@@ -1,0 +1,22 @@
+name: Bug report
+description: Report an updater bug
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra context
+      description: Do not include secrets, Minecraft credentials, or private server data.
+

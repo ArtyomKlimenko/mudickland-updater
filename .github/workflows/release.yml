@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish single-file updater
+        run: >
+          dotnet publish src/MuDickLand.Updater/MuDickLand.Updater.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:EnableCompressionInSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o artifacts/win-x64
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          Compress-Archive -Path artifacts/win-x64/* -DestinationPath MuDickLand.Updater-win-x64.zip -Force
+          Get-FileHash MuDickLand.Updater-win-x64.zip -Algorithm SHA256 | ForEach-Object {
+            "$($_.Hash.ToLower())  MuDickLand.Updater-win-x64.zip" | Out-File -Encoding ascii MuDickLand.Updater-win-x64.zip.sha256
+          }
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            MuDickLand.Updater-win-x64.zip
+            MuDickLand.Updater-win-x64.zip.sha256
+

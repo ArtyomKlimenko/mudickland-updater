@@ -1,0 +1,17 @@
+bin/
+obj/
+artifacts/
+.vs/
+.vscode/
+*.user
+*.suo
+*.log
+updater.json
+*.pem
+*.key
+*.pfx
+*.sig.tmp
+__pycache__/
+.pytest_cache/
+.mudickland-cache/
+

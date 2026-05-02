@@ -1,0 +1,28 @@
+name: Update failed
+description: Report a failed MuDickLand update
+title: "Update failed: "
+labels: ["update-failed"]
+body:
+  - type: input
+    id: updater-version
+    attributes:
+      label: Updater version
+      placeholder: "0.1.0"
+  - type: input
+    id: pack-version
+    attributes:
+      label: Pack version
+      placeholder: "experimental-2026.05.02"
+  - type: textarea
+    id: error
+    attributes:
+      label: Error text
+      description: Paste the visible error. Do not paste account tokens or private server data.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: What did you press and what happened?
+
