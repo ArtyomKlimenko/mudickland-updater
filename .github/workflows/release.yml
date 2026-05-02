@@ -27,9 +27,10 @@ jobs:
           -p:EnableCompressionInSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o artifacts/win-x64
-      - name: Add example configuration
+      - name: Add updater configuration
         shell: pwsh
         run: |
+          Copy-Item updater.json artifacts/win-x64/updater.json
           Copy-Item updater.example.json artifacts/win-x64/updater.example.json
           Copy-Item updater.localhost.json artifacts/win-x64/updater.localhost.json
           Copy-Item updater.82-http.example.json artifacts/win-x64/updater.82-http.example.json

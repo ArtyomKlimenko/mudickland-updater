@@ -21,7 +21,7 @@ Minecraft**, **не обходит лицензирование**, **не сод
 
 Актуальный релиз:
 
-https://github.com/ArtyomKlimenko/mudickland-updater/releases/tag/v0.1.0
+https://github.com/ArtyomKlimenko/mudickland-updater/releases/latest
 
 Файлы:
 
@@ -36,7 +36,8 @@ https://github.com/ArtyomKlimenko/mudickland-updater/releases/tag/v0.1.0
 
 1. Скачай `MuDickLand.Updater-win-x64.zip` из GitHub Releases.
 2. Распакуй архив, например в `C:\MuDickLandUpdater`.
-3. В архиве есть `updater.localhost.json`. Скопируй его рядом с
+3. Для проверки через SSH-туннель используй `updater.localhost.json`: скопируй
+   его рядом с
    `MuDickLand.Updater.exe` и переименуй в `updater.json`.
 
 Итоговый `updater.json` для проверки через SSH-туннель должен выглядеть так:
@@ -128,9 +129,9 @@ python3 tools/manifest-builder/build_manifest.py \
 }
 ```
 
-Если временно решено раздавать прямо по `http://82.26.151.254/`, в архиве есть
-`updater.82-http.example.json`. Его можно переименовать в `updater.json`, но
-только после того, как
+Если временно решено раздавать прямо по `http://82.26.151.254/`, в релизном
+архиве уже лежит готовый `updater.json` с этим адресом. Он заработает только
+после того, как
 `http://82.26.151.254/downloads/experimental/latest.json` начнет отвечать `200`.
 В этом файле включен явный флаг:
 

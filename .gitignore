@@ -6,7 +6,7 @@ artifacts/
 *.user
 *.suo
 *.log
-updater.json
+local.updater.json
 *.pem
 *.key
 *.pfx
@@ -14,4 +14,3 @@ updater.json
 __pycache__/
 .pytest_cache/
 .mudickland-cache/
-
