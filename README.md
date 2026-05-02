@@ -1,48 +1,98 @@
 # MuDickLand Updater
 
-Open-source Windows updater for the MuDickLand Experimental Minecraft Forge modpack.
+Открытый Windows-updater для клиентской сборки **MuDickLand Experimental**.
 
-The updater only manages modpack files. It does not implement Minecraft authentication,
-does not bypass account licensing, and does not ship Minecraft itself.
+Updater занимается только файлами модпака: скачивает моды, конфиги и данные сборки,
+проверяет их хэши и приводит выбранную папку к нужной версии. Он **не логинит
+Minecraft**, **не обходит лицензирование**, **не содержит Minecraft** и **не
+собирает приватные данные с компьютера**.
 
-## What It Does
+## Что он делает
 
-- Downloads a signed `latest.json` + `manifest.json` from the pack server.
-- Verifies `manifest.json.sig` before touching local files.
-- Downloads only missing or changed files.
-- Checks every downloaded file with SHA-256.
-- Deletes stale files only inside manifest-managed directories.
-- Keeps user data outside managed directories, such as saves, screenshots, `options.txt`,
-  and launcher account files.
+- Загружает `latest.json`, подписанный `manifest.json` и `manifest.json.sig`.
+- Проверяет подпись манифеста до любых изменений на диске.
+- Скачивает только отсутствующие или изменившиеся файлы.
+- Проверяет SHA-256 каждого скачанного файла.
+- Удаляет лишние файлы только внутри управляемых папок сборки.
+- Не трогает пользовательские данные вне управляемых папок: `saves`,
+  `screenshots`, `options.txt`, `servers.dat`, аккаунты лаунчера и т.п.
 
-## User Flow
+## Скачать
 
-1. Download the latest updater release from GitHub Releases.
-2. Run `MuDickLand.Updater.exe`.
-3. Pick an install directory, for example `%APPDATA%\.minecraft-pz-exp`.
-4. Press `Update`.
-5. Open your Minecraft launcher and point its game directory to the selected folder.
+Актуальный релиз:
 
-## Managed Directories
+https://github.com/ArtyomKlimenko/mudickland-updater/releases/tag/v0.1.0
 
-The first pack channel is expected to manage:
+Файлы:
 
-- `mods`
-- `config`
-- `defaultconfigs`
-- `kubejs`
-- `tacz`
-- `mod_data`
-- `data`
-- `patchouli_books`
-- `fancymenu_data`
+- `MuDickLand.Updater-win-x64.zip` — updater для Windows x64.
+- `MuDickLand.Updater-win-x64.zip.sha256` — контрольная сумма архива.
 
-The manifest builder rejects common server-only and private paths, including worlds,
-saves, logs, crash reports, server lists, bridge env files, backups, and private archives.
+## Как проверить на Windows
 
-## Server-Side Manifest Build
+Сейчас опубликованный тестовый manifest использует `http://127.0.0.1:8088/...`.
+Это специально локальный smoke-test URL. С удаленного Windows-ПК он заработает
+через SSH-туннель, пока не настроен нормальный HTTPS-домен.
 
-Example:
+1. Скачай `MuDickLand.Updater-win-x64.zip` из GitHub Releases.
+2. Распакуй архив, например в `C:\MuDickLandUpdater`.
+3. Рядом с `MuDickLand.Updater.exe` создай файл `updater.json`:
+
+```json
+{
+  "latestUrl": "http://127.0.0.1:8088/downloads/experimental/latest.json",
+  "siteUrl": "http://127.0.0.1:8088/",
+  "telegramUrl": "https://t.me/pz_family_chat_bot",
+  "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
+  "telemetryUrl": "http://127.0.0.1:8088/api/updater-event",
+  "launcherPath": ""
+}
+```
+
+4. В PowerShell на Windows подними SSH-туннель до сервера:
+
+```powershell
+ssh -L 8088:127.0.0.1:8088 o1o4@YOUR_SERVER_HOST
+```
+
+Если у тебя в `~/.ssh/config` уже есть алиас на сервер, можно так:
+
+```powershell
+ssh -L 8088:127.0.0.1:8088 YOUR_SSH_ALIAS
+```
+
+5. В другом PowerShell проверь, что Windows видит manifest:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8088/downloads/experimental/latest.json
+```
+
+6. Запусти `MuDickLand.Updater.exe`.
+7. В поле install directory выбери отдельную папку, например:
+
+```text
+%APPDATA%\.minecraft-pz-exp
+```
+
+8. Нажми `Check`. Должно показать версию `experimental-2026.05.02`, количество
+   файлов к скачиванию и размер.
+9. Нажми `Update`. На первом запуске будет скачано около `555 MB` клиентских
+   файлов сборки.
+10. После обновления открой свой Minecraft-лаунчер и укажи game directory на
+    выбранную папку.
+
+Важно: updater не устанавливает Forge и не настраивает аккаунт. Для игры нужен
+уже установленный Minecraft/Forge `1.20.1 / 47.4.20` в твоем лаунчере.
+
+## Как это должно работать для друзей
+
+Для нормальной раздачи без SSH-туннеля нужен публичный HTTPS-адрес, например:
+
+```text
+https://example.com/downloads/experimental/latest.json
+```
+
+После настройки домена нужно пересобрать manifest на сервере с HTTPS base URL:
 
 ```bash
 python3 tools/manifest-builder/build_manifest.py \
@@ -53,21 +103,7 @@ python3 tools/manifest-builder/build_manifest.py \
   --private-key /home/o1o4/mudickland-updater-signing/manifest_private.pem
 ```
 
-This creates:
-
-- `latest.json`
-- `manifest.json`
-- `manifest.json.sig`
-- `blobs/<sha-prefix>/<sha256>`
-
-`releaseNumber` is a monotonic UTC timestamp by default. The updater stores the
-last installed release number and refuses older signed manifests to reduce replay
-or downgrade risk.
-
-## Local Configuration
-
-The updater reads optional `updater.json` next to the executable. Start from
-`updater.example.json`:
+Затем рядом с `.exe` в релизе/архиве нужно положить `updater.json` уже с HTTPS:
 
 ```json
 {
@@ -80,10 +116,66 @@ The updater reads optional `updater.json` next to the executable. Start from
 }
 ```
 
-If `telemetryUrl` is empty, the updater sends no client-side telemetry.
-Production URLs must use HTTPS. Localhost HTTP is accepted for smoke tests.
+Production HTTP updater специально не принимает. HTTP разрешен только для
+`localhost`, чтобы можно было безопасно тестировать через SSH-туннель.
 
-## Build
+## Что попадает в сборку
+
+Управляемые папки V1:
+
+- `mods`
+- `config`
+- `defaultconfigs`
+- `kubejs`
+- `tacz`
+- `mod_data`
+- `data`
+- `patchouli_books`
+- `fancymenu_data`
+
+Manifest builder по умолчанию не публикует:
+
+- `world*`
+- `saves`
+- `logs`
+- `crash-reports`
+- `server.properties`
+- `ops.json`
+- `whitelist.json`
+- `banned-*.json`
+- `usercache.json`
+- `usernamecache.json`
+- `bridge*`
+- `.env`
+- backups
+- архивы с `private` или `do-not-share` в имени
+- скрытые/cache-папки вроде `mods/.connector`
+
+## Логи и приватность
+
+Updater может отправлять только минимальные события:
+
+- `check`
+- `update_success`
+- `update_failed`
+- `open_launcher`
+
+В событии есть random `installId`, версия updater, версия сборки и статус.
+Updater не отправляет список процессов, установленные программы, токены,
+Minecraft-аккаунты, ники, hardware id или содержимое папок.
+
+Сервер может хранить стандартные HTTP access logs: IP, путь запроса, статус,
+байты, user agent. Сырые логи режутся до последних 30 дней, долгосрочно остается
+агрегат без IP/installId в `daily-summary.json`.
+
+Подробнее:
+
+- [Privacy](docs/PRIVACY.md)
+- [Security](docs/SECURITY.md)
+
+## Разработка
+
+Сборка updater:
 
 ```bash
 dotnet publish src/MuDickLand.Updater/MuDickLand.Updater.csproj \
@@ -91,16 +183,16 @@ dotnet publish src/MuDickLand.Updater/MuDickLand.Updater.csproj \
   -r win-x64 \
   --self-contained true \
   -p:PublishSingleFile=true \
-  -p:EnableCompressionInSingleFile=true
+  -p:EnableCompressionInSingleFile=true \
+  -p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
-GitHub Actions builds the Windows release artifact on tags like `v0.1.0`.
+Тесты:
 
-## Privacy
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py'
+dotnet build src/MuDickLand.Updater/MuDickLand.Updater.csproj -c Release -p:EnableWindowsTargeting=true
+dotnet build tests/MuDickLand.Updater.Tests/MuDickLand.Updater.Tests.csproj -c Release -p:EnableWindowsTargeting=true
+```
 
-See `docs/PRIVACY.md`. The updater never collects process lists, account tokens,
-Minecraft credentials, hardware IDs, or folder contents.
-
-## Security
-
-See `docs/SECURITY.md`.
+GitHub Actions собирает Windows release artifact на тегах вида `v0.1.0`.
