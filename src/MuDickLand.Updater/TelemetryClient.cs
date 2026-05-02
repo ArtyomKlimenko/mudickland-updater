@@ -27,7 +27,7 @@ public sealed class TelemetryClient
         {
             return;
         }
-        if (!TransportPolicy.IsAllowedHttpUri(_config.TelemetryUrl))
+        if (!TransportPolicy.IsAllowedHttpUri(_config.TelemetryUrl, _config.AllowInsecureHttp))
         {
             _logger.Write("Telemetry disabled because telemetryUrl is not HTTPS or localhost HTTP.");
             return;

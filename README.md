@@ -36,7 +36,10 @@ https://github.com/ArtyomKlimenko/mudickland-updater/releases/tag/v0.1.0
 
 1. Скачай `MuDickLand.Updater-win-x64.zip` из GitHub Releases.
 2. Распакуй архив, например в `C:\MuDickLandUpdater`.
-3. Рядом с `MuDickLand.Updater.exe` создай файл `updater.json`:
+3. В архиве есть `updater.localhost.json`. Скопируй его рядом с
+   `MuDickLand.Updater.exe` и переименуй в `updater.json`.
+
+Итоговый `updater.json` для проверки через SSH-туннель должен выглядеть так:
 
 ```json
 {
@@ -45,7 +48,8 @@ https://github.com/ArtyomKlimenko/mudickland-updater/releases/tag/v0.1.0
   "telegramUrl": "https://t.me/pz_family_chat_bot",
   "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
   "telemetryUrl": "http://127.0.0.1:8088/api/updater-event",
-  "launcherPath": ""
+  "launcherPath": "",
+  "allowInsecureHttp": false
 }
 ```
 
@@ -86,38 +90,58 @@ Invoke-WebRequest http://127.0.0.1:8088/downloads/experimental/latest.json
 
 ## Как это должно работать для друзей
 
-Для нормальной раздачи без SSH-туннеля нужен публичный HTTPS-адрес, например:
+Публичный адрес сейчас: `http://82.26.151.254/`.
+
+Но на момент написания `http://82.26.151.254/downloads/experimental/latest.json`
+еще отвечает старым `404`, где `/downloads/*` закрыт. До раздачи друзьям нужно
+сначала направить этот публичный адрес на актуальный updater-сайт, который сейчас
+локально отвечает на `127.0.0.1:8088`.
+
+Правильный production-вариант — HTTPS:
 
 ```text
-https://example.com/downloads/experimental/latest.json
+https://82.26.151.254/downloads/experimental/latest.json
 ```
 
-После настройки домена нужно пересобрать manifest на сервере с HTTPS base URL:
+После настройки HTTPS нужно пересобрать manifest на сервере с HTTPS base URL:
 
 ```bash
 python3 tools/manifest-builder/build_manifest.py \
   --source /opt/minecraft-zomboid/experimental/pz-exp \
   --output /opt/minecraft-zomboid/site/public/downloads/experimental \
-  --base-url https://YOUR_DOMAIN/downloads/experimental \
+  --base-url https://82.26.151.254/downloads/experimental \
   --version experimental-2026.05.02 \
   --private-key /home/o1o4/mudickland-updater-signing/manifest_private.pem
 ```
 
-Затем рядом с `.exe` в релизе/архиве нужно положить `updater.json` уже с HTTPS:
+Затем рядом с `.exe` в релизе/архиве нужно положить готовый `updater.json`:
 
 ```json
 {
-  "latestUrl": "https://YOUR_DOMAIN/downloads/experimental/latest.json",
-  "siteUrl": "https://YOUR_DOMAIN/",
+  "latestUrl": "https://82.26.151.254/downloads/experimental/latest.json",
+  "siteUrl": "https://82.26.151.254/",
   "telegramUrl": "https://t.me/pz_family_chat_bot",
   "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
-  "telemetryUrl": "https://YOUR_DOMAIN/api/updater-event",
-  "launcherPath": ""
+  "telemetryUrl": "https://82.26.151.254/api/updater-event",
+  "launcherPath": "",
+  "allowInsecureHttp": false
 }
 ```
 
-Production HTTP updater специально не принимает. HTTP разрешен только для
-`localhost`, чтобы можно было безопасно тестировать через SSH-туннель.
+Если временно решено раздавать прямо по `http://82.26.151.254/`, в архиве есть
+`updater.82-http.example.json`. Его можно переименовать в `updater.json`, но
+только после того, как
+`http://82.26.151.254/downloads/experimental/latest.json` начнет отвечать `200`.
+В этом файле включен явный флаг:
+
+```json
+{
+  "allowInsecureHttp": true
+}
+```
+
+Это временный режим. Подпись manifest все еще защищает файлы сборки от подмены,
+но сам HTTP-трафик не шифруется.
 
 ## Что попадает в сборку
 

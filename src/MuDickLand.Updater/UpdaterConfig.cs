@@ -7,12 +7,13 @@ public sealed class UpdaterConfig
     public const string AppVersion = "0.1.0";
     public const string DefaultInstallFolderName = ".minecraft-pz-exp";
 
-    public string LatestUrl { get; set; } = "https://YOUR_DOMAIN/downloads/experimental/latest.json";
-    public string SiteUrl { get; set; } = "https://YOUR_DOMAIN/";
+    public string LatestUrl { get; set; } = "http://127.0.0.1:8088/downloads/experimental/latest.json";
+    public string SiteUrl { get; set; } = "http://127.0.0.1:8088/";
     public string TelegramUrl { get; set; } = "https://t.me/pz_family_chat_bot";
     public string SupportUrl { get; set; } = "https://github.com/ArtyomKlimenko/mudickland-updater/issues";
     public string TelemetryUrl { get; set; } = "";
     public string LauncherPath { get; set; } = "";
+    public bool AllowInsecureHttp { get; set; }
 
     public static UpdaterConfig Load(AppLogger logger)
     {
@@ -51,4 +52,3 @@ czNjhUGX3uMY8Fx1bZi+nUs18OKO5bmomlJva08jis5hAgMBAAE=
 -----END PUBLIC KEY-----
 """;
 }
-

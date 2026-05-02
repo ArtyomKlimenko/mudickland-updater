@@ -84,6 +84,17 @@ public sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(0, 0, 0, 10)
         });
+        if (_config.AllowInsecureHttp)
+        {
+            root.Controls.Add(new Label
+            {
+                Text = "Warning: public HTTP is enabled in updater.json. Manifest signatures still protect files, but traffic is not encrypted. Use HTTPS for public distribution.",
+                AutoSize = true,
+                Dock = DockStyle.Fill,
+                ForeColor = Color.DarkRed,
+                Padding = new Padding(0, 0, 0, 10)
+            });
+        }
 
         root.Controls.Add(MakeLabeledRow("Install directory", _installDir, ("Browse", BrowseInstallDir)));
         root.Controls.Add(MakeLabeledRow("latest.json URL", _latestUrl));

@@ -2,7 +2,7 @@ namespace MuDickLand.Updater;
 
 public static class TransportPolicy
 {
-    public static Uri RequireAllowedHttpUri(string rawUrl, string fieldName)
+    public static Uri RequireAllowedHttpUri(string rawUrl, string fieldName, bool allowInsecureHttp = false)
     {
         if (!Uri.TryCreate(rawUrl, UriKind.Absolute, out var uri))
         {
@@ -14,7 +14,7 @@ public static class TransportPolicy
             return uri;
         }
 
-        if (uri.Scheme == Uri.UriSchemeHttp && IsLocalHost(uri.Host))
+        if (uri.Scheme == Uri.UriSchemeHttp && (IsLocalHost(uri.Host) || allowInsecureHttp))
         {
             return uri;
         }
@@ -22,11 +22,11 @@ public static class TransportPolicy
         throw new InvalidOperationException($"{fieldName} must use HTTPS outside local testing.");
     }
 
-    public static bool IsAllowedHttpUri(string rawUrl)
+    public static bool IsAllowedHttpUri(string rawUrl, bool allowInsecureHttp = false)
     {
         try
         {
-            RequireAllowedHttpUri(rawUrl, "url");
+            RequireAllowedHttpUri(rawUrl, "url", allowInsecureHttp);
             return true;
         }
         catch
@@ -42,4 +42,3 @@ public static class TransportPolicy
             || host.Equals("::1", StringComparison.OrdinalIgnoreCase);
     }
 }
-

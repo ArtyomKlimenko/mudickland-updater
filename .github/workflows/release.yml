@@ -29,7 +29,10 @@ jobs:
           -o artifacts/win-x64
       - name: Add example configuration
         shell: pwsh
-        run: Copy-Item updater.example.json artifacts/win-x64/updater.example.json
+        run: |
+          Copy-Item updater.example.json artifacts/win-x64/updater.example.json
+          Copy-Item updater.localhost.json artifacts/win-x64/updater.localhost.json
+          Copy-Item updater.82-http.example.json artifacts/win-x64/updater.82-http.example.json
       - name: Package artifact
         shell: pwsh
         run: |

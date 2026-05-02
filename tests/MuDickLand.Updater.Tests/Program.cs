@@ -5,6 +5,7 @@ var tests = new (string Name, Action Body)[]
     ("Transport policy accepts HTTPS", () => TransportPolicy.RequireAllowedHttpUri("https://example.test/latest.json", "latestUrl")),
     ("Transport policy accepts localhost HTTP", () => TransportPolicy.RequireAllowedHttpUri("http://127.0.0.1:8088/latest.json", "latestUrl")),
     ("Transport policy rejects production HTTP", () => AssertThrows(() => TransportPolicy.RequireAllowedHttpUri("http://example.test/latest.json", "latestUrl"))),
+    ("Transport policy accepts opt-in production HTTP", () => TransportPolicy.RequireAllowedHttpUri("http://82.26.151.254/latest.json", "latestUrl", allowInsecureHttp: true)),
     ("Path safety normalizes slash style", () => AssertEqual("mods/a.jar", PathSafety.NormalizeManifestPath(@"mods\a.jar"))),
     ("Path safety rejects traversal", () => AssertThrows(() => PathSafety.NormalizeManifestPath("../mods/a.jar"))),
     ("Path safety rejects absolute Windows path", () => AssertThrows(() => PathSafety.NormalizeManifestPath(@"C:\tmp\a.jar"))),
@@ -52,4 +53,3 @@ static void AssertTrue(bool condition)
         throw new InvalidOperationException("Expected condition to be true.");
     }
 }
-
