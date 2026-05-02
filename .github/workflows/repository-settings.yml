@@ -1,0 +1,66 @@
+name: Repository Settings
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  apply-settings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const labels = [
+              { name: "bug", color: "d73a4a", description: "Something is broken" },
+              { name: "update-failed", color: "b60205", description: "The updater failed while checking, downloading, verifying, or deleting files" },
+              { name: "security", color: "ee0701", description: "Security-sensitive behavior or hardening" },
+              { name: "privacy", color: "5319e7", description: "Telemetry, logs, disclosure, or privacy policy" },
+              { name: "feature", color: "a2eeef", description: "New updater or pack distribution capability" },
+              { name: "pack-manifest", color: "0e8a16", description: "Manifest builder, pack metadata, or hosted file list" },
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.updateLabel({ owner, repo, name: label.name, color: label.color, description: label.description });
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({ owner, repo, ...label });
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+            try {
+              await github.rest.repos.replaceAllTopics({
+                owner,
+                repo,
+                names: ["minecraft", "forge", "modpack", "updater", "windows"],
+              });
+            } catch (error) {
+              core.warning(`Could not update topics with GITHUB_TOKEN: ${error.message}`);
+            }
+
+            try {
+              await github.rest.repos.update({
+                owner,
+                repo,
+                description: "Open-source updater for MuDickLand Experimental Minecraft modpack",
+                homepage: "",
+                has_issues: true,
+                has_projects: false,
+                has_wiki: false,
+              });
+            } catch (error) {
+              core.warning(`Could not update repository metadata with GITHUB_TOKEN: ${error.message}`);
+            }
+
