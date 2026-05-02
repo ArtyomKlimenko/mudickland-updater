@@ -1,0 +1,9 @@
+{
+  "latestUrl": "https://YOUR_DOMAIN/downloads/experimental/latest.json",
+  "siteUrl": "https://YOUR_DOMAIN/",
+  "telegramUrl": "https://t.me/pz_family_chat_bot",
+  "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
+  "telemetryUrl": "https://YOUR_DOMAIN/api/updater-event",
+  "launcherPath": ""
+}
+

@@ -27,6 +27,9 @@ jobs:
           -p:EnableCompressionInSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o artifacts/win-x64
+      - name: Add example configuration
+        shell: pwsh
+        run: Copy-Item updater.example.json artifacts/win-x64/updater.example.json
       - name: Package artifact
         shell: pwsh
         run: |
@@ -40,4 +43,3 @@ jobs:
           files: |
             MuDickLand.Updater-win-x64.zip
             MuDickLand.Updater-win-x64.zip.sha256
-

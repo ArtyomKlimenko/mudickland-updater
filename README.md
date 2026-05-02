@@ -66,7 +66,8 @@ or downgrade risk.
 
 ## Local Configuration
 
-The updater reads optional `updater.json` next to the executable:
+The updater reads optional `updater.json` next to the executable. Start from
+`updater.example.json`:
 
 ```json
 {
@@ -80,6 +81,7 @@ The updater reads optional `updater.json` next to the executable:
 ```
 
 If `telemetryUrl` is empty, the updater sends no client-side telemetry.
+Production URLs must use HTTPS. Localhost HTTP is accepted for smoke tests.
 
 ## Build
 

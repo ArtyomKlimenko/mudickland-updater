@@ -24,6 +24,7 @@ The private key must stay outside the GitHub repository. The initial local key p
 ## File Verification
 
 - Every manifest file has `path`, `size`, `sha256`, and `url`.
+- Network URLs must use HTTPS outside localhost testing.
 - Every downloaded file is written to a temporary cache first.
 - Size and SHA-256 must match before the file replaces the installed target.
 - The updater refuses absolute paths, drive paths, `..`, invalid file names, and writes

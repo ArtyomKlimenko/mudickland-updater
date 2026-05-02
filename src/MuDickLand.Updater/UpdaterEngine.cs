@@ -25,12 +25,15 @@ public sealed class UpdaterEngine
         IProgress<UpdaterProgress> progress,
         CancellationToken cancellationToken)
     {
+        TransportPolicy.RequireAllowedHttpUri(_config.LatestUrl, "latestUrl");
         progress.Report(new UpdaterProgress { Message = "Fetching latest index...", Percent = 2 });
         var latest = await GetJsonAsync<LatestIndex>(_config.LatestUrl, cancellationToken);
         if (latest is null || string.IsNullOrWhiteSpace(latest.ManifestUrl) || string.IsNullOrWhiteSpace(latest.SignatureUrl))
         {
             throw new InvalidOperationException("latest.json is missing manifestUrl or signatureUrl.");
         }
+        TransportPolicy.RequireAllowedHttpUri(latest.ManifestUrl, "manifestUrl");
+        TransportPolicy.RequireAllowedHttpUri(latest.SignatureUrl, "signatureUrl");
 
         progress.Report(new UpdaterProgress { Message = "Downloading signed manifest...", Percent = 8 });
         var manifestBytes = await _http.GetByteArrayAsync(latest.ManifestUrl, cancellationToken);
@@ -85,10 +88,7 @@ public sealed class UpdaterEngine
                 throw new InvalidOperationException("Manifest file has invalid SHA-256: " + file.Path);
             }
 
-            if (!Uri.TryCreate(file.Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
-            {
-                throw new InvalidOperationException("Manifest file has invalid URL: " + file.Path);
-            }
+            TransportPolicy.RequireAllowedHttpUri(file.Url, "fileUrl");
         }
 
         Directory.CreateDirectory(installDir);
