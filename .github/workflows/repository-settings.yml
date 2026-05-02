@@ -64,3 +64,19 @@ jobs:
               core.warning(`Could not update repository metadata with GITHUB_TOKEN: ${error.message}`);
             }
 
+            try {
+              await github.rest.repos.updateBranchProtection({
+                owner,
+                repo,
+                branch: "main",
+                required_status_checks: {
+                  strict: true,
+                  contexts: ["build-windows", "test-manifest-builder"],
+                },
+                enforce_admins: true,
+                required_pull_request_reviews: null,
+                restrictions: null,
+              });
+            } catch (error) {
+              core.warning(`Could not update branch protection with GITHUB_TOKEN: ${error.message}`);
+            }
