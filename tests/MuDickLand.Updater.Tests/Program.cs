@@ -1,4 +1,5 @@
 using MuDickLand.Updater;
+using System.Text.Json;
 
 var tests = new (string Name, Action Body)[]
 {
@@ -12,6 +13,11 @@ var tests = new (string Name, Action Body)[]
     ("Path safety combines under root", () => AssertEqual(Path.GetFullPath(Path.Combine(Path.GetTempPath(), "mdl", "mods", "a.jar")), PathSafety.CombineUnderRoot(Path.Combine(Path.GetTempPath(), "mdl"), "mods/a.jar"))),
     ("Manifest dir check allows managed path", () => AssertTrue(PathSafety.IsUnderManagedDir("mods/a.jar", new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "mods" }))),
     ("Manifest dir check rejects unmanaged path", () => AssertTrue(!PathSafety.IsUnderManagedDir("saves/world/level.dat", new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "mods" }))),
+    ("Updater state accepts old JSON without hash cache", () =>
+    {
+        var state = JsonSerializer.Deserialize<UpdaterState>("{}") ?? throw new InvalidOperationException("State was null.");
+        AssertTrue(state.FileHashCache.Count == 0);
+    }),
 };
 
 var passed = 0;

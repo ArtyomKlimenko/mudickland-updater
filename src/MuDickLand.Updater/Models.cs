@@ -56,4 +56,12 @@ public sealed class UpdaterState
     public string InstallDir { get; set; } = "";
     public bool TelemetryEnabled { get; set; } = true;
     public Dictionary<string, long> LastReleaseNumbers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, FileHashCacheEntry> FileHashCache { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class FileHashCacheEntry
+{
+    public long Size { get; set; }
+    public long LastWriteTimeUtcTicks { get; set; }
+    public string Sha256 { get; set; } = "";
 }

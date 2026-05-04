@@ -26,9 +26,11 @@ public sealed class StateStore
 
         try
         {
-            return JsonSerializer.Deserialize<UpdaterState>(
+            var state = JsonSerializer.Deserialize<UpdaterState>(
                 File.ReadAllText(_path),
                 JsonDefaults.Options) ?? new UpdaterState();
+            Normalize(state);
+            return state;
         }
         catch (Exception ex)
         {
@@ -48,5 +50,23 @@ public sealed class StateStore
             _logger.Write("Failed to write state.json: " + ex.Message);
         }
     }
-}
 
+    private static void Normalize(UpdaterState state)
+    {
+        state.LastReleaseNumbers ??= new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        state.FileHashCache ??= new Dictionary<string, FileHashCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        if (state.LastReleaseNumbers.Comparer != StringComparer.OrdinalIgnoreCase)
+        {
+            state.LastReleaseNumbers = new Dictionary<string, long>(
+                state.LastReleaseNumbers,
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (state.FileHashCache.Comparer != StringComparer.OrdinalIgnoreCase)
+        {
+            state.FileHashCache = new Dictionary<string, FileHashCacheEntry>(
+                state.FileHashCache,
+                StringComparer.OrdinalIgnoreCase);
+        }
+    }
+}

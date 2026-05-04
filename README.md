@@ -23,6 +23,10 @@ Minecraft**, **не обходит лицензирование**, **не сод
 
 https://github.com/ArtyomKlimenko/mudickland-updater/releases/latest
 
+Временная сборка с публичного updater-сайта:
+
+http://82.26.151.254/downloads/updater/MuDickLand.Updater-win-x64.zip
+
 Файлы:
 
 - `MuDickLand.Updater-win-x64.zip` — updater для Windows x64.
@@ -30,60 +34,52 @@ https://github.com/ArtyomKlimenko/mudickland-updater/releases/latest
 
 ## Как проверить на Windows
 
-Сейчас опубликованный тестовый manifest использует `http://127.0.0.1:8088/...`.
-Это специально локальный smoke-test URL. С удаленного Windows-ПК он заработает
-через SSH-туннель, пока не настроен нормальный HTTPS-домен.
+Сейчас публичный updater-index доступен по временному HTTP-адресу:
+
+```text
+http://82.26.151.254/downloads/experimental/latest.json
+```
+
+Подпись manifest защищает файлы сборки от подмены, но сам HTTP-трафик не
+шифруется. Для постоянной раздачи нужен HTTPS.
 
 1. Скачай `MuDickLand.Updater-win-x64.zip` из GitHub Releases.
 2. Распакуй архив, например в `C:\MuDickLandUpdater`.
-3. Для проверки через SSH-туннель используй `updater.localhost.json`: скопируй
-   его рядом с
-   `MuDickLand.Updater.exe` и переименуй в `updater.json`.
+3. Рядом с `MuDickLand.Updater.exe` должен лежать `updater.json` с публичным
+   HTTP-адресом. В релизном архиве он уже подготовлен.
 
-Итоговый `updater.json` для проверки через SSH-туннель должен выглядеть так:
+Итоговый `updater.json` для публичной проверки должен выглядеть так:
 
 ```json
 {
-  "latestUrl": "http://127.0.0.1:8088/downloads/experimental/latest.json",
-  "siteUrl": "http://127.0.0.1:8088/",
+  "latestUrl": "http://82.26.151.254/downloads/experimental/latest.json",
+  "siteUrl": "http://82.26.151.254/",
   "telegramUrl": "https://t.me/pz_family_chat_bot",
   "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
-  "telemetryUrl": "http://127.0.0.1:8088/api/updater-event",
+  "telemetryUrl": "http://82.26.151.254/api/updater-event",
   "launcherPath": "",
-  "allowInsecureHttp": false
+  "allowInsecureHttp": true
 }
 ```
 
-4. В PowerShell на Windows подними SSH-туннель до сервера:
+4. В PowerShell проверь, что Windows видит manifest:
 
 ```powershell
-ssh -L 8088:127.0.0.1:8088 o1o4@YOUR_SERVER_HOST
+Invoke-WebRequest http://82.26.151.254/downloads/experimental/latest.json
 ```
 
-Если у тебя в `~/.ssh/config` уже есть алиас на сервер, можно так:
-
-```powershell
-ssh -L 8088:127.0.0.1:8088 YOUR_SSH_ALIAS
-```
-
-5. В другом PowerShell проверь, что Windows видит manifest:
-
-```powershell
-Invoke-WebRequest http://127.0.0.1:8088/downloads/experimental/latest.json
-```
-
-6. Запусти `MuDickLand.Updater.exe`.
-7. В поле install directory выбери отдельную папку, например:
+5. Запусти `MuDickLand.Updater.exe`.
+6. В поле "Папка установки" выбери отдельную папку, например:
 
 ```text
 %APPDATA%\.minecraft-pz-exp
 ```
 
-8. Нажми `Check`. Должно показать версию `experimental-2026.05.02`, количество
-   файлов к скачиванию и размер.
-9. Нажми `Update`. На первом запуске будет скачано около `555 MB` клиентских
-   файлов сборки.
-10. После обновления открой свой Minecraft-лаунчер и укажи game directory на
+7. Нажми `Проверить`. Должно показать текущую версию сборки, количество файлов к
+   скачиванию и размер.
+8. Нажми `Обновить`. На первом запуске будет скачан набор клиентских файлов
+   сборки.
+9. После обновления открой свой Minecraft-лаунчер и укажи game directory на
     выбранную папку.
 
 Важно: updater не устанавливает Forge и не настраивает аккаунт. Для игры нужен
@@ -93,10 +89,14 @@ Invoke-WebRequest http://127.0.0.1:8088/downloads/experimental/latest.json
 
 Публичный адрес сейчас: `http://82.26.151.254/`.
 
-Но на момент написания `http://82.26.151.254/downloads/experimental/latest.json`
-еще отвечает старым `404`, где `/downloads/*` закрыт. До раздачи друзьям нужно
-сначала направить этот публичный адрес на актуальный updater-сайт, который сейчас
-локально отвечает на `127.0.0.1:8088`.
+Публичный updater-index сейчас должен отвечать `200`:
+
+```text
+http://82.26.151.254/downloads/experimental/latest.json
+```
+
+Этот HTTP-режим временный. Подпись manifest защищает файлы сборки от подмены,
+но сам HTTP-трафик не шифруется.
 
 Правильный production-вариант — HTTPS:
 
@@ -111,7 +111,7 @@ python3 tools/manifest-builder/build_manifest.py \
   --source /opt/minecraft-zomboid/experimental/pz-exp \
   --output /opt/minecraft-zomboid/site/public/downloads/experimental \
   --base-url https://82.26.151.254/downloads/experimental \
-  --version experimental-2026.05.02 \
+  --version experimental-2026.05.04 \
   --private-key /home/o1o4/mudickland-updater-signing/manifest_private.pem
 ```
 
@@ -130,10 +130,8 @@ python3 tools/manifest-builder/build_manifest.py \
 ```
 
 Если временно решено раздавать прямо по `http://82.26.151.254/`, в релизном
-архиве уже лежит готовый `updater.json` с этим адресом. Он заработает только
-после того, как
-`http://82.26.151.254/downloads/experimental/latest.json` начнет отвечать `200`.
-В этом файле включен явный флаг:
+архиве уже лежит готовый `updater.json` с этим адресом. В этом файле включен
+явный флаг:
 
 ```json
 {
@@ -141,8 +139,10 @@ python3 tools/manifest-builder/build_manifest.py \
 }
 ```
 
-Это временный режим. Подпись manifest все еще защищает файлы сборки от подмены,
-но сам HTTP-трафик не шифруется.
+Публичная раздача живет на VPS `82.26.151.254`, сервис `mudickland-site`.
+После пересборки manifest локально нужно синхронизировать
+`/opt/minecraft-zomboid/site/server.py` и `/opt/minecraft-zomboid/site/public/`
+на VPS и перезапустить сервис.
 
 ## Что попадает в сборку
 
@@ -220,4 +220,4 @@ dotnet build src/MuDickLand.Updater/MuDickLand.Updater.csproj -c Release -p:Enab
 dotnet build tests/MuDickLand.Updater.Tests/MuDickLand.Updater.Tests.csproj -c Release -p:EnableWindowsTargeting=true
 ```
 
-GitHub Actions собирает Windows release artifact на тегах вида `v0.1.0`.
+GitHub Actions собирает Windows release artifact на тегах вида `v0.1.3`.

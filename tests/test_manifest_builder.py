@@ -24,8 +24,11 @@ class ManifestBuilderTests(unittest.TestCase):
             output = tmp_path / "output"
             (source / "mods").mkdir(parents=True)
             (source / "mods" / "a.jar").write_bytes(b"jar")
+            (source / "mods" / "desktop.ini").write_bytes(b"windows metadata")
             (source / "mods" / "old.jar.bak").write_bytes(b"secret")
             (source / "mods" / "client-private-with-map.zip").write_bytes(b"secret")
+            (source / "mods" / "documentation" / "palladium").mkdir(parents=True)
+            (source / "mods" / "documentation" / "palladium" / "abilities.html").write_text("docs", encoding="utf-8")
             (source / "mods" / ".connector").mkdir()
             (source / "mods" / ".connector" / "cache.jar").write_bytes(b"cache")
             (source / "saves").mkdir()

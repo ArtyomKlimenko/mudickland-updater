@@ -47,6 +47,8 @@ BLOCKED_FILE_NAMES = {
     "usercache.json",
     "usernamecache.json",
     "eula.txt",
+    "desktop.ini",
+    "thumbs.db",
 }
 
 
@@ -90,6 +92,8 @@ def should_include(relative: Path, full_path: Path) -> bool:
     if top in BLOCKED_TOP_LEVEL:
         return False
     if top.startswith("world"):
+        return False
+    if len(parts) >= 2 and parts[0] == "mods" and parts[1] == "documentation":
         return False
     if lower_name in BLOCKED_FILE_NAMES:
         return False
