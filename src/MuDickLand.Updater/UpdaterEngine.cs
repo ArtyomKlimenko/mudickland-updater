@@ -32,7 +32,7 @@ public sealed class UpdaterEngine
         CancellationToken cancellationToken)
     {
         TransportPolicy.RequireAllowedHttpUri(_config.LatestUrl, "latestUrl", _config.AllowInsecureHttp);
-        progress.Report(new UpdaterProgress { Message = "Fetching latest index...", Percent = 2 });
+        progress.Report(new UpdaterProgress { Message = "Проверяю свежую версию...", Percent = 2 });
         var latest = await GetJsonAsync<LatestIndex>(_config.LatestUrl, cancellationToken);
         if (latest is null || string.IsNullOrWhiteSpace(latest.ManifestUrl) || string.IsNullOrWhiteSpace(latest.SignatureUrl))
         {
@@ -50,11 +50,11 @@ public sealed class UpdaterEngine
         }
         EnsureUpdaterVersion(latest);
 
-        progress.Report(new UpdaterProgress { Message = "Downloading signed manifest...", Percent = 8 });
+        progress.Report(new UpdaterProgress { Message = "Скачиваю список файлов...", Percent = 8 });
         var manifestBytes = await _http.GetByteArrayAsync(latest.ManifestUrl, cancellationToken);
         var signatureBytes = await _http.GetByteArrayAsync(latest.SignatureUrl, cancellationToken);
 
-        progress.Report(new UpdaterProgress { Message = "Verifying manifest signature...", Percent = 12 });
+        progress.Report(new UpdaterProgress { Message = "Проверяю список файлов...", Percent = 12 });
         if (!Security.VerifyManifestSignature(manifestBytes, signatureBytes))
         {
             throw new InvalidOperationException("Manifest signature verification failed.");
@@ -125,7 +125,7 @@ public sealed class UpdaterEngine
             var file = manifest.Files[index];
             var target = PathSafety.CombineUnderRoot(installDir, file.Path);
             var percent = 12 + (int)(30.0 * (index + 1) / Math.Max(1, manifest.Files.Count));
-            progress.Report(new UpdaterProgress { Message = "Checking " + file.Path, Percent = percent });
+            progress.Report(new UpdaterProgress { Message = "Проверяю файл " + file.Path, Percent = percent });
 
             if (!File.Exists(target))
             {
@@ -165,7 +165,7 @@ public sealed class UpdaterEngine
             ? FindDeletes(installDir, manifest, managedDirs)
             : [];
 
-        progress.Report(new UpdaterProgress { Message = "Plan ready.", Percent = 45 });
+        progress.Report(new UpdaterProgress { Message = "Проверка готова.", Percent = 45 });
         return new UpdatePlan
         {
             Manifest = manifest,
@@ -186,7 +186,7 @@ public sealed class UpdaterEngine
         var completedDownloads = 0;
         if (plan.Downloads.Count > 0)
         {
-            progress.Report(new UpdaterProgress { Message = "Downloading files...", Percent = 45 });
+            progress.Report(new UpdaterProgress { Message = "Скачиваю файлы...", Percent = 45 });
         }
 
         var parallelOptions = new ParallelOptions
@@ -201,7 +201,7 @@ public sealed class UpdaterEngine
             var completed = Interlocked.Increment(ref completedDownloads);
             progress.Report(new UpdaterProgress
             {
-                Message = "Downloaded " + file.Path,
+                Message = "Скачан файл " + file.Path,
                 Percent = 45 + (int)(45.0 * completed / Math.Max(1, plan.Downloads.Count))
             });
         });
@@ -210,13 +210,13 @@ public sealed class UpdaterEngine
         {
             var path = plan.Deletes[index];
             var percent = 90 + (int)(8.0 * (index + 1) / Math.Max(1, plan.Deletes.Count));
-            progress.Report(new UpdaterProgress { Message = "Deleting stale file " + path, Percent = percent });
+            progress.Report(new UpdaterProgress { Message = "Удаляю старый файл " + path, Percent = percent });
             DeleteManagedFile(installDir, path);
             RemoveHashCache(path);
         }
 
         CleanupEmptyManagedDirectories(installDir, plan.Manifest.ManagedDirs);
-        progress.Report(new UpdaterProgress { Message = "Update complete.", Percent = 100 });
+        progress.Report(new UpdaterProgress { Message = "Готово. Сборка обновлена.", Percent = 100 });
         _logger.Write($"Updated {plan.Manifest.PackId} {plan.Manifest.Version}: downloads={plan.Downloads.Count}, deletes={plan.Deletes.Count}");
     }
 

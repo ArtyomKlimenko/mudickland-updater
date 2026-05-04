@@ -4,12 +4,12 @@ namespace MuDickLand.Updater;
 
 public sealed class UpdaterConfig
 {
-    public const string AppVersion = "0.1.6";
-    public const string DefaultInstallFolderName = ".minecraft-pz-exp";
+    public const string AppVersion = "0.1.7";
 
     public string LatestUrl { get; set; } = "http://127.0.0.1:8088/downloads/experimental/latest.json";
     public string SiteUrl { get; set; } = "http://127.0.0.1:8088/";
     public string TelegramUrl { get; set; } = "https://t.me/pz_family_chat_bot";
+    public string GitHubUrl { get; set; } = "https://github.com/ArtyomKlimenko/mudickland-updater";
     public string SupportUrl { get; set; } = "https://github.com/ArtyomKlimenko/mudickland-updater/issues";
     public string TelemetryUrl { get; set; } = "";
     public string LauncherPath { get; set; } = "";

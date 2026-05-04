@@ -101,7 +101,7 @@ public sealed class UpdaterOutdatedException : Exception
         string customMessage)
     {
         var text = string.IsNullOrWhiteSpace(customMessage)
-            ? "Обновите обновлятор, чтобы поставить свежую experimental-сборку."
+            ? "Обновите апдейтер, чтобы поставить свежую experimental-сборку."
             : customMessage.Trim();
         var target = !string.IsNullOrWhiteSpace(downloadUrl) ? downloadUrl : pageUrl;
         var suffix = string.IsNullOrWhiteSpace(target) ? "" : Environment.NewLine + target;

@@ -2,9 +2,9 @@
   "latestUrl": "http://127.0.0.1:8088/downloads/experimental/latest.json",
   "siteUrl": "http://127.0.0.1:8088/",
   "telegramUrl": "https://t.me/pz_family_chat_bot",
+  "gitHubUrl": "https://github.com/ArtyomKlimenko/mudickland-updater",
   "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
   "telemetryUrl": "http://127.0.0.1:8088/api/updater-event",
   "launcherPath": "",
   "allowInsecureHttp": false
 }
-

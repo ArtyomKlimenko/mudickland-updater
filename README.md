@@ -19,7 +19,7 @@ Minecraft**, **не обходит лицензирование**, **не сод
 
 ## Скачать
 
-Актуальная публичная сборка updater: `0.1.6`.
+Актуальная публичная сборка updater: `0.1.7`.
 
 Актуальный релиз на GitHub:
 
@@ -40,7 +40,7 @@ http://82.26.151.254/downloads/updater/MuDickLand.Updater-win-x64.zip
 
 Начиная с `0.1.4`, updater проверяет поле `requiredUpdaterVersion` в
 `latest.json`. Если для нового manifest потребуется более свежий updater,
-старое окно покажет предупреждение "Обновите обновлятор" и предложит открыть
+старое окно покажет предупреждение "Обновите апдейтер" и предложит открыть
 ссылку из `updaterDownloadUrl` или `updaterPageUrl`.
 
 Начиная с `0.1.5`, manifest может явно передавать `deletePolicy.globs`. Это
@@ -70,6 +70,7 @@ http://82.26.151.254/downloads/experimental/latest.json
   "latestUrl": "http://82.26.151.254/downloads/experimental/latest.json",
   "siteUrl": "http://82.26.151.254/",
   "telegramUrl": "https://t.me/pz_family_chat_bot",
+  "gitHubUrl": "https://github.com/ArtyomKlimenko/mudickland-updater",
   "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
   "telemetryUrl": "http://82.26.151.254/api/updater-event",
   "launcherPath": "",
@@ -84,10 +85,10 @@ Invoke-WebRequest http://82.26.151.254/downloads/experimental/latest.json
 ```
 
 5. Запусти `MuDickLand.Updater.exe`.
-6. В поле "Папка установки" выбери отдельную папку, например:
+6. В поле "Папка игры" выбери папку профиля experimental, например:
 
 ```text
-%APPDATA%\.minecraft-pz-exp
+%APPDATA%\.minecraft\versions\MuDickLand_experimental
 ```
 
 7. Нажми `Проверить`. Должно показать текущую версию сборки, количество файлов к
@@ -127,10 +128,10 @@ python3 tools/manifest-builder/build_manifest.py \
   --output /opt/minecraft-zomboid/site/public/downloads/experimental \
   --base-url https://82.26.151.254/downloads/experimental \
   --version experimental-2026.05.04 \
-  --required-updater-version 0.1.5 \
+  --required-updater-version 0.1.7 \
   --updater-download-url https://82.26.151.254/downloads/updater/MuDickLand.Updater-win-x64.zip \
   --updater-page-url https://82.26.151.254/experimental.html \
-  --updater-message "Обновите обновлятор, чтобы поставить свежую experimental-сборку." \
+  --updater-message "Обновите апдейтер, чтобы поставить свежую experimental-сборку." \
   --private-key /home/o1o4/mudickland-updater-signing/manifest_private.pem
 ```
 
@@ -141,6 +142,7 @@ python3 tools/manifest-builder/build_manifest.py \
   "latestUrl": "https://82.26.151.254/downloads/experimental/latest.json",
   "siteUrl": "https://82.26.151.254/",
   "telegramUrl": "https://t.me/pz_family_chat_bot",
+  "gitHubUrl": "https://github.com/ArtyomKlimenko/mudickland-updater",
   "supportUrl": "https://github.com/ArtyomKlimenko/mudickland-updater/issues",
   "telemetryUrl": "https://82.26.151.254/api/updater-event",
   "launcherPath": "",

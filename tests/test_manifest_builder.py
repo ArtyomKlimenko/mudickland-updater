@@ -136,7 +136,7 @@ class ManifestBuilderTests(unittest.TestCase):
                     "--updater-page-url",
                     "https://example.test/experimental.html",
                     "--updater-message",
-                    "Обновите обновлятор.",
+                    "Обновите апдейтер.",
                 ],
                 check=True,
                 stdout=subprocess.DEVNULL,
@@ -146,7 +146,7 @@ class ManifestBuilderTests(unittest.TestCase):
             self.assertEqual(latest["requiredUpdaterVersion"], "0.1.4")
             self.assertEqual(latest["updaterDownloadUrl"], "https://example.test/downloads/updater.zip")
             self.assertEqual(latest["updaterPageUrl"], "https://example.test/experimental.html")
-            self.assertEqual(latest["updaterMessage"], "Обновите обновлятор.")
+            self.assertEqual(latest["updaterMessage"], "Обновите апдейтер.")
 
     def test_disabled_client_mods_become_delete_globs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

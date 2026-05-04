@@ -11,8 +11,6 @@ public sealed class MainForm : Form
     private readonly UpdaterState _state;
 
     private readonly TextBox _installDir = new();
-    private readonly TextBox _latestUrl = new();
-    private readonly CheckBox _telemetryEnabled = new();
     private readonly ProgressBar _progress = new();
     private readonly Label _status = new();
     private readonly RichTextBox _log = new();
@@ -20,10 +18,7 @@ public sealed class MainForm : Form
     private readonly Button _checkButton = new();
     private readonly Button _updateButton = new();
     private readonly Button _cancelButton = new();
-    private readonly Button _openLauncherButton = new();
     private readonly Button _openFolderButton = new();
-    private readonly Button _logsButton = new();
-    private readonly Button _copyLogPathButton = new();
     private readonly Button _helpButton = new();
 
     private CancellationTokenSource? _cts;
@@ -36,8 +31,9 @@ public sealed class MainForm : Form
         _config = UpdaterConfig.Load(_logger);
         _state = _stateStore.Load();
 
-        Text = "Обновлятор MuDickLand";
-        MinimumSize = new Size(820, 620);
+        Text = "Апдейтер MuDickLand";
+        MinimumSize = new Size(680, 520);
+        Size = new Size(920, 640);
         StartPosition = FormStartPosition.CenterScreen;
 
         BuildUi();
@@ -50,7 +46,7 @@ public sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 8,
+            RowCount = 10,
             Padding = new Padding(16),
         };
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -59,7 +55,9 @@ public sealed class MainForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         Controls.Add(root);
 
@@ -74,82 +72,79 @@ public sealed class MainForm : Form
 
         root.Controls.Add(new Label
         {
-            Text = "Этот обновлятор управляет только файлами сборки. Он не работает с аккаунтами Minecraft и авторизацией.",
-            AutoSize = true,
+            Text = "Апдейтер ставит и обновляет файлы сборки. Логин, пароль и аккаунт Minecraft он не просит.",
+            AutoSize = false,
+            Height = 28,
             Dock = DockStyle.Fill,
             Padding = new Padding(0, 4, 0, 4)
         });
 
         root.Controls.Add(new Label
         {
-            Text = "Телеметрия необязательна и ограничена событиями обновлятора, версией приложения, версией сборки, статусом и случайным id установки. Она не отправляет списки процессов, аккаунты, токены, id железа, никнеймы или содержимое папок.",
-            AutoSize = true,
+            Text = "Порядок простой: выбери папку игры, нажми «Проверить», потом «Обновить». Эту же папку укажи в лаунчере как Game directory.",
+            AutoSize = false,
+            Height = 40,
             Dock = DockStyle.Fill,
             Padding = new Padding(0, 0, 0, 10)
         });
-        if (_config.AllowInsecureHttp)
-        {
-            root.Controls.Add(new Label
-            {
-                Text = "Внимание: в updater.json включен публичный HTTP. Подписи манифеста по-прежнему защищают файлы, но трафик не шифруется. Для публичной раздачи используйте HTTPS.",
-                AutoSize = true,
-                Dock = DockStyle.Fill,
-                ForeColor = Color.DarkRed,
-                Padding = new Padding(0, 0, 0, 10)
-            });
-        }
 
         ConfigureToolTips();
 
         root.Controls.Add(MakeLabeledRow(
-            "Папка установки",
+            "Папка игры",
             _installDir,
-            ("Обзор...", BrowseInstallDir, "Выбрать папку, куда будут скачиваться и обновляться файлы сборки.")));
-        root.Controls.Add(MakeLabeledRow(
-            "URL latest.json",
-            _latestUrl,
-            ("Копировать URL", (_, _) => CopyLatestUrl(), "Скопировать текущий URL latest.json в буфер обмена.")));
+            ("Обзор...", BrowseInstallDir, "Выбрать папку, куда апдейтер поставит сборку.")));
 
-        _telemetryEnabled.Text = "Отправлять минимальную телеметрию обновлятора";
-        _telemetryEnabled.AutoSize = true;
-        _telemetryEnabled.Padding = new Padding(0, 6, 0, 6);
-        root.Controls.Add(_telemetryEnabled);
+        root.Controls.Add(new Label
+        {
+            Text = @"Рекомендуемый отдельный профиль: %APPDATA%\.minecraft\versions\MuDickLand_experimental. Если играешь через обычную .minecraft, выбери в апдейтере %APPDATA%\.minecraft.",
+            AutoSize = false,
+            Height = 54,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(0, 0, 0, 8)
+        });
 
         var buttons = new FlowLayoutPanel
         {
             FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = true,
             AutoSize = true,
-            Dock = DockStyle.Fill
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 2, 0, 8)
         };
 
         ConfigureButton(_checkButton, "Проверить", async (_, _) => await RunCheckAsync());
         ConfigureButton(_updateButton, "Обновить", async (_, _) => await RunUpdateAsync());
         ConfigureButton(_cancelButton, "Стоп", (_, _) => _cts?.Cancel());
-        ConfigureButton(_openLauncherButton, "Открыть лаунчер", async (_, _) => await OpenLauncherAsync());
         ConfigureButton(_openFolderButton, "Открыть папку", (_, _) => OpenInstallFolder());
-        ConfigureButton(_logsButton, "Открыть лог", (_, _) => OpenLogs());
-        ConfigureButton(_copyLogPathButton, "Копировать путь лога", (_, _) => CopyLogPath());
         ConfigureButton(_helpButton, "Помощь", (_, _) => ShowHelp());
 
         buttons.Controls.AddRange([
             _checkButton,
             _updateButton,
             _cancelButton,
-            _openLauncherButton,
             _openFolderButton,
-            _logsButton,
-            _copyLogPathButton,
             _helpButton
         ]);
         root.Controls.Add(buttons);
 
+        var progressPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Height = 8,
+            MinimumSize = new Size(0, 8),
+            Margin = new Padding(0, 0, 0, 8)
+        };
         _progress.Dock = DockStyle.Fill;
-        _progress.Height = 24;
-        root.Controls.Add(_progress);
+        _progress.Height = 6;
+        _progress.Style = ProgressBarStyle.Continuous;
+        progressPanel.Controls.Add(_progress);
+        root.Controls.Add(progressPanel);
 
         _log.Dock = DockStyle.Fill;
         _log.ReadOnly = true;
         _log.Font = new Font("Consolas", 10);
+        _log.WordWrap = false;
         root.Controls.Add(_log);
 
         var links = new FlowLayoutPanel
@@ -160,26 +155,34 @@ public sealed class MainForm : Form
         };
         links.Controls.Add(MakeLink("Сайт", _config.SiteUrl));
         links.Controls.Add(MakeLink("Telegram", _config.TelegramUrl));
-        links.Controls.Add(MakeLink("Поддержка / ошибки", _config.SupportUrl));
-        links.Controls.Add(new Label { Text = "Лог: " + _logger.LogPath, AutoSize = true, Padding = new Padding(12, 5, 0, 0) });
+        links.Controls.Add(MakeLink("GitHub", _config.GitHubUrl));
+        links.Controls.Add(MakeLink("Поддержка", _config.SupportUrl));
         root.Controls.Add(links);
 
         _status.Text = "Готово.";
-        _status.AutoSize = true;
-        _status.Dock = DockStyle.Bottom;
-        Controls.Add(_status);
+        _status.AutoSize = false;
+        _status.AutoEllipsis = true;
+        _status.Height = 30;
+        _status.Dock = DockStyle.Fill;
+        _status.Padding = new Padding(0, 6, 0, 0);
+        root.Controls.Add(_status);
     }
 
     private void LoadStateIntoUi()
     {
         _installDir.Text = !string.IsNullOrWhiteSpace(_state.InstallDir)
             ? _state.InstallDir
-            : Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                UpdaterConfig.DefaultInstallFolderName);
-        _latestUrl.Text = _config.LatestUrl;
-        _telemetryEnabled.Checked = _state.TelemetryEnabled;
+            : DefaultInstallDir();
         _cancelButton.Enabled = false;
+    }
+
+    private static string DefaultInstallDir()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            ".minecraft",
+            "versions",
+            "MuDickLand_experimental");
     }
 
     private Control MakeLabeledRow(string label, TextBox textBox, params (string Text, EventHandler Handler, string ToolTip)[] buttons)
@@ -191,11 +194,11 @@ public sealed class MainForm : Form
             ColumnCount = 2 + buttons.Length,
             Padding = new Padding(0, 4, 0, 4)
         };
-        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140));
+        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
         panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         for (var i = 0; i < buttons.Length; i++)
         {
-            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 128));
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 116));
         }
 
         panel.Controls.Add(new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
@@ -217,8 +220,10 @@ public sealed class MainForm : Form
     private static void ConfigureButton(Button button, string text, EventHandler handler)
     {
         button.Text = text;
-        button.AutoSize = true;
-        button.MinimumSize = new Size(120, 34);
+        button.AutoSize = false;
+        button.Size = new Size(118, 34);
+        button.MinimumSize = new Size(118, 34);
+        button.Margin = new Padding(0, 0, 8, 8);
         button.Click += handler;
     }
 
@@ -255,7 +260,7 @@ public sealed class MainForm : Form
             _stateStore.Save(_state);
             Append($"Версия: {_lastPlan.Manifest.Version}");
             Append($"Нужно скачать: {_lastPlan.Downloads.Count} файлов, {FormatBytes(_lastPlan.BytesToDownload)}");
-            Append($"Нужно удалить: {_lastPlan.Deletes.Count} файлов");
+            Append($"Старых файлов к удалению: {_lastPlan.Deletes.Count}");
             if (_lastPlan.Deletes.Count > 0)
             {
                 Append("Будут удалены:");
@@ -306,7 +311,7 @@ public sealed class MainForm : Form
         catch (UpdaterOutdatedException ex)
         {
             Append("ОШИБКА: " + ex.Message);
-            _status.Text = "Нужно обновить обновлятор.";
+            _status.Text = "Нужно обновить апдейтер.";
             _logger.Write(ex.ToString());
             var target = !string.IsNullOrWhiteSpace(ex.DownloadUrl)
                 ? ex.DownloadUrl
@@ -316,7 +321,7 @@ public sealed class MainForm : Form
             var result = MessageBox.Show(
                 this,
                 ex.Message + "\n\nОткрыть страницу скачивания?",
-                "Обновите обновлятор",
+                "Обновите апдейтер",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning);
             if (result == DialogResult.Yes)
@@ -354,16 +359,22 @@ public sealed class MainForm : Form
         {
             _progress.Value = Math.Clamp(progress.Percent, 0, 100);
             _status.Text = progress.Message;
-            Append(progress.Message);
+            if (ShouldAppendProgress(progress.Message))
+            {
+                Append(progress.Message);
+            }
         });
+    }
+
+    private static bool ShouldAppendProgress(string message)
+    {
+        return !message.StartsWith("Проверяю файл ", StringComparison.OrdinalIgnoreCase);
     }
 
     private void SaveUiState()
     {
         _state.InstallDir = _installDir.Text;
-        _state.TelemetryEnabled = _telemetryEnabled.Checked;
         _stateStore.Save(_state);
-        _config.LatestUrl = _latestUrl.Text;
     }
 
     private UpdaterEngine NewEngine() => new(_http, _config, _state, _logger);
@@ -375,10 +386,7 @@ public sealed class MainForm : Form
         _checkButton.Enabled = !busy;
         _updateButton.Enabled = !busy;
         _cancelButton.Enabled = busy;
-        _openLauncherButton.Enabled = !busy;
         _openFolderButton.Enabled = !busy;
-        _logsButton.Enabled = !busy;
-        _copyLogPathButton.Enabled = !busy;
     }
 
     private void Append(string message)
@@ -394,96 +402,43 @@ public sealed class MainForm : Form
         _logger.Write(message);
     }
 
-    private async Task OpenLauncherAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(_config.LauncherPath) && File.Exists(_config.LauncherPath))
-        {
-            Process.Start(new ProcessStartInfo(_config.LauncherPath) { UseShellExecute = true });
-            await NewTelemetryClient().SendAsync("open_launcher", "configured", "", CancellationToken.None);
-            return;
-        }
-
-        OpenInstallFolder();
-        await NewTelemetryClient().SendAsync("open_launcher", "not_configured", "", CancellationToken.None);
-        MessageBox.Show(
-            this,
-            "Путь к лаунчеру не настроен. Откройте Minecraft Launcher вручную и укажите в нем папку игры: выбранную папку установки.",
-            "Лаунчер не настроен",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
-    }
-
     private void ConfigureToolTips()
     {
         _toolTip.AutoPopDelay = 12000;
         _toolTip.InitialDelay = 400;
         _toolTip.ReshowDelay = 100;
         _toolTip.ShowAlways = true;
-        _toolTip.SetToolTip(_installDir, "Папка, где лежат файлы сборки. Обновлятор будет сверять и менять файлы внутри нее.");
-        _toolTip.SetToolTip(_latestUrl, "Адрес latest.json с информацией о последней версии сборки.");
-        _toolTip.SetToolTip(_telemetryEnabled, "Включает или выключает минимальные события обновлятора без персональных данных.");
-        _toolTip.SetToolTip(_checkButton, "Проверить манифест и показать, какие файлы нужно скачать или удалить.");
-        _toolTip.SetToolTip(_updateButton, "Скачать недостающие файлы, заменить устаревшие и удалить лишнее по манифесту.");
+        _toolTip.SetToolTip(_installDir, "Папка, куда апдейтер ставит сборку.");
+        _toolTip.SetToolTip(_checkButton, "Проверить, что нужно скачать.");
+        _toolTip.SetToolTip(_updateButton, "Скачать и применить обновление.");
         _toolTip.SetToolTip(_cancelButton, "Остановить текущую проверку или обновление.");
-        _toolTip.SetToolTip(_openLauncherButton, "Запустить настроенный лаунчер или открыть папку установки, если лаунчер не задан.");
-        _toolTip.SetToolTip(_openFolderButton, "Открыть выбранную папку установки в проводнике.");
-        _toolTip.SetToolTip(_logsButton, "Открыть файл лога обновлятора.");
-        _toolTip.SetToolTip(_copyLogPathButton, "Скопировать путь к файлу лога в буфер обмена.");
-        _toolTip.SetToolTip(_helpButton, "Показать краткую справку по кнопкам и частым ошибкам.");
-        _toolTip.SetToolTip(_progress, "Текущий прогресс проверки или обновления.");
-        _toolTip.SetToolTip(_log, "Журнал действий за текущий запуск. Полный файл лога можно открыть кнопкой \"Открыть лог\".");
+        _toolTip.SetToolTip(_openFolderButton, "Открыть папку игры.");
+        _toolTip.SetToolTip(_helpButton, "Показать короткую подсказку.");
+        _toolTip.SetToolTip(_progress, "Прогресс.");
+        _toolTip.SetToolTip(_log, "Журнал действий. Текст можно выделить и скопировать.");
     }
 
     private void ShowHelp()
     {
         MessageBox.Show(
             this,
-            "Проверить: скачивает latest.json, сверяет манифест с выбранной папкой и пишет в журнал, что нужно скачать или удалить.\n\n" +
-            "Обновить: выполняет найденный план обновления. Если проверка не запускалась, сначала строит план автоматически.\n\n" +
-            "Стоп: останавливает текущую проверку или обновление. Кнопка активна только во время операции.\n\n" +
-            "Лог: краткий журнал виден в окне ниже. Полный файл открывается кнопкой \"Открыть лог\". Путь можно скопировать кнопкой \"Копировать путь лога\".\n\n" +
-            "Ошибка 429: сервер временно ограничил частоту запросов. Подождите несколько минут и повторите попытку. Если ошибка повторяется, откройте лог и отправьте его в поддержку вместе с URL latest.json.",
+            "1. Выбери папку игры.\n" +
+            "2. Нажми «Проверить».\n" +
+            "3. Нажми «Обновить».\n" +
+            "4. В лаунчере укажи эту же папку как Game directory.\n\n" +
+            @"Рекомендуемый отдельный профиль: %APPDATA%\.minecraft\versions\MuDickLand_experimental." + "\n\n" +
+            @"Обычная %APPDATA%\.minecraft тоже подходит, если в апдейтере выбрана она же." + "\n\n" +
+            "Главное правило: папка в апдейтере и Game directory в лаунчере должны совпадать.\n\n" +
+            "Если появилась ошибка, выдели текст в нижнем журнале, скопируй его и отправь в поддержку.",
             "Помощь",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
-    }
-
-    private void CopyLatestUrl()
-    {
-        CopyTextToClipboard(_latestUrl.Text, "URL latest.json");
-    }
-
-    private void CopyLogPath()
-    {
-        CopyTextToClipboard(_logger.LogPath, "Путь к логу");
-    }
-
-    private void CopyTextToClipboard(string value, string name)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            _status.Text = $"{name} пуст.";
-            return;
-        }
-
-        Clipboard.SetText(value);
-        _status.Text = $"{name} скопирован.";
     }
 
     private void OpenInstallFolder()
     {
         Directory.CreateDirectory(_installDir.Text);
         Process.Start(new ProcessStartInfo(_installDir.Text) { UseShellExecute = true });
-    }
-
-    private void OpenLogs()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(_logger.LogPath)!);
-        if (!File.Exists(_logger.LogPath))
-        {
-            File.WriteAllText(_logger.LogPath, "");
-        }
-        Process.Start(new ProcessStartInfo(_logger.LogPath) { UseShellExecute = true });
     }
 
     private static void OpenUrl(string url)
