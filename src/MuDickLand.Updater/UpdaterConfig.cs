@@ -4,7 +4,7 @@ namespace MuDickLand.Updater;
 
 public sealed class UpdaterConfig
 {
-    public const string AppVersion = "0.1.3";
+    public const string AppVersion = "0.1.5";
     public const string DefaultInstallFolderName = ".minecraft-pz-exp";
 
     public string LatestUrl { get; set; } = "http://127.0.0.1:8088/downloads/experimental/latest.json";

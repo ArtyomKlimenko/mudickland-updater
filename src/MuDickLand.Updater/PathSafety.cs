@@ -88,5 +88,47 @@ public static class PathSafety
         var first = normalizedPath.Split('/')[0];
         return managedDirs.Contains(first);
     }
-}
 
+    public static string NormalizeSafeGlob(string glob)
+    {
+        if (string.IsNullOrWhiteSpace(glob))
+        {
+            throw new InvalidOperationException("Manifest contains an empty deletePolicy glob.");
+        }
+
+        var cleaned = glob.Replace('\\', '/').Trim();
+        if (cleaned.StartsWith('/') || cleaned.Contains(':'))
+        {
+            throw new InvalidOperationException("Manifest contains an absolute deletePolicy glob: " + glob);
+        }
+
+        var parts = cleaned.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+        {
+            throw new InvalidOperationException("Manifest contains an empty deletePolicy glob.");
+        }
+
+        foreach (var part in parts)
+        {
+            if (part is "." or "..")
+            {
+                throw new InvalidOperationException("Manifest contains deletePolicy path traversal: " + glob);
+            }
+
+            foreach (var ch in part)
+            {
+                if (ch is '*' or '?')
+                {
+                    continue;
+                }
+
+                if (Path.GetInvalidFileNameChars().Contains(ch))
+                {
+                    throw new InvalidOperationException("Manifest contains invalid deletePolicy glob: " + glob);
+                }
+            }
+        }
+
+        return string.Join('/', parts);
+    }
+}

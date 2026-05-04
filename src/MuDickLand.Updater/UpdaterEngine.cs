@@ -40,6 +40,15 @@ public sealed class UpdaterEngine
         }
         TransportPolicy.RequireAllowedHttpUri(latest.ManifestUrl, "manifestUrl", _config.AllowInsecureHttp);
         TransportPolicy.RequireAllowedHttpUri(latest.SignatureUrl, "signatureUrl", _config.AllowInsecureHttp);
+        if (!string.IsNullOrWhiteSpace(latest.UpdaterDownloadUrl))
+        {
+            TransportPolicy.RequireAllowedHttpUri(latest.UpdaterDownloadUrl, "updaterDownloadUrl", _config.AllowInsecureHttp);
+        }
+        if (!string.IsNullOrWhiteSpace(latest.UpdaterPageUrl))
+        {
+            TransportPolicy.RequireAllowedHttpUri(latest.UpdaterPageUrl, "updaterPageUrl", _config.AllowInsecureHttp);
+        }
+        EnsureUpdaterVersion(latest);
 
         progress.Report(new UpdaterProgress { Message = "Downloading signed manifest...", Percent = 8 });
         var manifestBytes = await _http.GetByteArrayAsync(latest.ManifestUrl, cancellationToken);
@@ -95,6 +104,18 @@ public sealed class UpdaterEngine
             }
 
             TransportPolicy.RequireAllowedHttpUri(file.Url, "fileUrl", _config.AllowInsecureHttp);
+        }
+
+        manifest.DeletePolicy.Globs = manifest.DeletePolicy.Globs
+            .Select(PathSafety.NormalizeSafeGlob)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        foreach (var glob in manifest.DeletePolicy.Globs)
+        {
+            if (!PathSafety.IsUnderManagedDir(glob, managedDirs))
+            {
+                throw new InvalidOperationException("deletePolicy glob is outside managed directories: " + glob);
+            }
         }
 
         Directory.CreateDirectory(installDir);
@@ -213,7 +234,7 @@ public sealed class UpdaterEngine
         var expected = manifest.Files
             .Select(file => file.Path)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var deletes = new List<string>();
+        var deletes = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var managedDir in managedDirs)
         {
@@ -239,7 +260,46 @@ public sealed class UpdaterEngine
             }
         }
 
-        return deletes;
+        foreach (var glob in manifest.DeletePolicy.Globs)
+        {
+            foreach (var path in FindGlobMatches(installDir, glob))
+            {
+                if (!expected.Contains(path))
+                {
+                    deletes.Add(path);
+                }
+            }
+        }
+
+        return deletes.ToList();
+    }
+
+    private static IEnumerable<string> FindGlobMatches(string installDir, string normalizedGlob)
+    {
+        var slash = normalizedGlob.LastIndexOf('/');
+        var dir = slash >= 0 ? normalizedGlob[..slash] : "";
+        var pattern = slash >= 0 ? normalizedGlob[(slash + 1)..] : normalizedGlob;
+        if (pattern.Length == 0)
+        {
+            yield break;
+        }
+
+        var fullDir = dir.Length == 0 ? Path.GetFullPath(installDir) : PathSafety.CombineUnderRoot(installDir, dir);
+        if (!Directory.Exists(fullDir))
+        {
+            yield break;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(fullDir, pattern, SearchOption.TopDirectoryOnly))
+        {
+            if (File.GetAttributes(file).HasFlag(FileAttributes.ReparsePoint))
+            {
+                continue;
+            }
+
+            var relative = Path.GetRelativePath(installDir, file).Replace('\\', '/');
+            yield return PathSafety.NormalizeManifestPath(relative);
+        }
     }
 
     private async Task DownloadAndInstallFileAsync(
@@ -428,5 +488,56 @@ public sealed class UpdaterEngine
                 }
             }
         }
+    }
+
+    private static void EnsureUpdaterVersion(LatestIndex latest)
+    {
+        var required = latest.RequiredUpdaterVersion?.Trim();
+        if (string.IsNullOrWhiteSpace(required))
+        {
+            return;
+        }
+
+        if (CompareVersions(UpdaterConfig.AppVersion, required) < 0)
+        {
+            throw new UpdaterOutdatedException(
+                UpdaterConfig.AppVersion,
+                required,
+                latest.UpdaterDownloadUrl ?? "",
+                latest.UpdaterPageUrl ?? "",
+                latest.UpdaterMessage ?? "");
+        }
+    }
+
+    public static int CompareVersions(string left, string right)
+    {
+        var leftParts = ParseVersion(left);
+        var rightParts = ParseVersion(right);
+        var count = Math.Max(leftParts.Length, rightParts.Length);
+        for (var i = 0; i < count; i++)
+        {
+            var leftValue = i < leftParts.Length ? leftParts[i] : 0;
+            var rightValue = i < rightParts.Length ? rightParts[i] : 0;
+            if (leftValue != rightValue)
+            {
+                return leftValue.CompareTo(rightValue);
+            }
+        }
+
+        return 0;
+    }
+
+    private static int[] ParseVersion(string version)
+    {
+        var clean = version.Trim().TrimStart('v', 'V');
+        var dashIndex = clean.IndexOf('-');
+        if (dashIndex >= 0)
+        {
+            clean = clean[..dashIndex];
+        }
+
+        return clean.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(part => int.TryParse(part, out var value) ? value : 0)
+            .ToArray();
     }
 }

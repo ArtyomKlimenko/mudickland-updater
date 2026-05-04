@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -51,6 +53,7 @@ class ManifestBuilderTests(unittest.TestCase):
                 version="v1",
                 release_number=202605020001,
                 managed_dirs=["mods"],
+                delete_globs=[],
             )
 
             self.assertEqual([entry["path"] for entry in manifest["files"]], ["mods/a.jar"])
@@ -79,6 +82,7 @@ class ManifestBuilderTests(unittest.TestCase):
                 version="v1",
                 release_number=1,
                 managed_dirs=["mods"],
+                delete_globs=[],
             )
             first_hash = first["files"][0]["sha256"]
             self.assertTrue((output / "blobs" / first_hash[:2] / first_hash).is_file())
@@ -93,6 +97,7 @@ class ManifestBuilderTests(unittest.TestCase):
                 version="v2",
                 release_number=2,
                 managed_dirs=["mods"],
+                delete_globs=[],
             )
             second_hash = second["files"][0]["sha256"]
             self.assertNotEqual(first_hash, second_hash)
@@ -101,6 +106,59 @@ class ManifestBuilderTests(unittest.TestCase):
     def test_normalize_relative_rejects_escape(self) -> None:
         with self.assertRaises(ValueError):
             build_manifest.normalize_relative(Path("../secrets.env"))
+
+    def test_cli_writes_updater_self_update_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "source"
+            output = tmp_path / "output"
+            (source / "mods").mkdir(parents=True)
+            (source / "mods" / "a.jar").write_bytes(b"jar")
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(MODULE_PATH),
+                    "--source",
+                    str(source),
+                    "--output",
+                    str(output),
+                    "--base-url",
+                    "https://example.test/downloads/experimental",
+                    "--version",
+                    "v1",
+                    "--release-number",
+                    "1",
+                    "--required-updater-version",
+                    "0.1.4",
+                    "--updater-download-url",
+                    "https://example.test/downloads/updater.zip",
+                    "--updater-page-url",
+                    "https://example.test/experimental.html",
+                    "--updater-message",
+                    "Обновите обновлятор.",
+                ],
+                check=True,
+                stdout=subprocess.DEVNULL,
+            )
+
+            latest = json.loads((output / "latest.json").read_text(encoding="utf-8"))
+            self.assertEqual(latest["requiredUpdaterVersion"], "0.1.4")
+            self.assertEqual(latest["updaterDownloadUrl"], "https://example.test/downloads/updater.zip")
+            self.assertEqual(latest["updaterPageUrl"], "https://example.test/experimental.html")
+            self.assertEqual(latest["updaterMessage"], "Обновите обновлятор.")
+
+    def test_disabled_client_mods_become_delete_globs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "source"
+            (source / "disabled-client-mods").mkdir(parents=True)
+            (source / "disabled-client-mods" / "create-1.20.1-6.0.8.jar").write_bytes(b"jar")
+
+            self.assertEqual(
+                build_manifest.build_disabled_client_delete_globs(source),
+                ["mods/create-1.20.1-6.0.8.jar"],
+            )
 
 
 if __name__ == "__main__":

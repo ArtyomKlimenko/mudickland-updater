@@ -18,6 +18,10 @@ var tests = new (string Name, Action Body)[]
         var state = JsonSerializer.Deserialize<UpdaterState>("{}") ?? throw new InvalidOperationException("State was null.");
         AssertTrue(state.FileHashCache.Count == 0);
     }),
+    ("Updater version compare detects older updater", () => AssertTrue(UpdaterEngine.CompareVersions("0.1.3", "0.1.4") < 0)),
+    ("Updater version compare accepts equal updater", () => AssertTrue(UpdaterEngine.CompareVersions("v0.1.4", "0.1.4") == 0)),
+    ("Updater version compare accepts newer updater", () => AssertTrue(UpdaterEngine.CompareVersions("0.2.0", "0.1.4") > 0)),
+    ("Delete glob allows managed wildcard", () => AssertTrue(PathSafety.NormalizeSafeGlob("mods/create*.jar") == "mods/create*.jar")),
 };
 
 var passed = 0;

@@ -256,6 +256,19 @@ public sealed class MainForm : Form
             Append($"Версия: {_lastPlan.Manifest.Version}");
             Append($"Нужно скачать: {_lastPlan.Downloads.Count} файлов, {FormatBytes(_lastPlan.BytesToDownload)}");
             Append($"Нужно удалить: {_lastPlan.Deletes.Count} файлов");
+            if (_lastPlan.Deletes.Count > 0)
+            {
+                Append("Будут удалены:");
+                foreach (var path in _lastPlan.Deletes.Take(20))
+                {
+                    Append("  " + path);
+                }
+
+                if (_lastPlan.Deletes.Count > 20)
+                {
+                    Append($"  ...и еще {_lastPlan.Deletes.Count - 20}");
+                }
+            }
             await NewTelemetryClient().SendAsync("check", "success", _lastPlan.Manifest.Version, cancellationToken);
         }, "check");
     }
@@ -289,6 +302,27 @@ public sealed class MainForm : Form
         {
             Append("Остановлено.");
             _status.Text = "Остановлено.";
+        }
+        catch (UpdaterOutdatedException ex)
+        {
+            Append("ОШИБКА: " + ex.Message);
+            _status.Text = "Нужно обновить обновлятор.";
+            _logger.Write(ex.ToString());
+            var target = !string.IsNullOrWhiteSpace(ex.DownloadUrl)
+                ? ex.DownloadUrl
+                : !string.IsNullOrWhiteSpace(ex.PageUrl)
+                    ? ex.PageUrl
+                    : _config.SiteUrl;
+            var result = MessageBox.Show(
+                this,
+                ex.Message + "\n\nОткрыть страницу скачивания?",
+                "Обновите обновлятор",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes)
+            {
+                OpenUrl(target);
+            }
         }
         catch (Exception ex)
         {

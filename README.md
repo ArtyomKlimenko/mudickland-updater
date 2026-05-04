@@ -19,7 +19,9 @@ Minecraft**, **не обходит лицензирование**, **не сод
 
 ## Скачать
 
-Актуальный релиз:
+Актуальная публичная сборка updater: `0.1.5`.
+
+Актуальный релиз на GitHub:
 
 https://github.com/ArtyomKlimenko/mudickland-updater/releases/latest
 
@@ -31,6 +33,15 @@ http://82.26.151.254/downloads/updater/MuDickLand.Updater-win-x64.zip
 
 - `MuDickLand.Updater-win-x64.zip` — updater для Windows x64.
 - `MuDickLand.Updater-win-x64.zip.sha256` — контрольная сумма архива.
+
+Начиная с `0.1.4`, updater проверяет поле `requiredUpdaterVersion` в
+`latest.json`. Если для нового manifest потребуется более свежий updater,
+старое окно покажет предупреждение "Обновите обновлятор" и предложит открыть
+ссылку из `updaterDownloadUrl` или `updaterPageUrl`.
+
+Начиная с `0.1.5`, manifest может явно передавать `deletePolicy.globs`. Это
+нужно для чистки удаленных jar вроде старых Create/FirstAid/RpgZ/Stamina
+Compounds, чтобы Minecraft не падал на mismatched mod channel list.
 
 ## Как проверить на Windows
 
@@ -112,6 +123,10 @@ python3 tools/manifest-builder/build_manifest.py \
   --output /opt/minecraft-zomboid/site/public/downloads/experimental \
   --base-url https://82.26.151.254/downloads/experimental \
   --version experimental-2026.05.04 \
+  --required-updater-version 0.1.5 \
+  --updater-download-url https://82.26.151.254/downloads/updater/MuDickLand.Updater-win-x64.zip \
+  --updater-page-url https://82.26.151.254/experimental.html \
+  --updater-message "Обновите обновлятор, чтобы поставить свежую experimental-сборку." \
   --private-key /home/o1o4/mudickland-updater-signing/manifest_private.pem
 ```
 
@@ -220,4 +235,4 @@ dotnet build src/MuDickLand.Updater/MuDickLand.Updater.csproj -c Release -p:Enab
 dotnet build tests/MuDickLand.Updater.Tests/MuDickLand.Updater.Tests.csproj -c Release -p:EnableWindowsTargeting=true
 ```
 
-GitHub Actions собирает Windows release artifact на тегах вида `v0.1.3`.
+GitHub Actions собирает Windows release artifact на тегах вида `v0.1.x`.

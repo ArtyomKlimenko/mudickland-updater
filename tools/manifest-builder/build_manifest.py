@@ -135,6 +135,7 @@ def build_manifest(
     version: str,
     release_number: int,
     managed_dirs: list[str],
+    delete_globs: list[str],
 ) -> dict:
     files: list[FileEntry] = []
     blobs_dir = output / "blobs"
@@ -170,10 +171,23 @@ def build_manifest(
         "version": version,
         "releaseNumber": release_number,
         "managedDirs": managed_dirs,
-        "deletePolicy": {"enabled": True},
+        "deletePolicy": {"enabled": True, "globs": delete_globs},
         "files": [entry.__dict__ for entry in files],
     }
     return manifest
+
+
+def build_disabled_client_delete_globs(source: Path) -> list[str]:
+    disabled_dir = source / "disabled-client-mods"
+    if not disabled_dir.is_dir():
+        return []
+
+    globs = []
+    for file in sorted(path for path in disabled_dir.iterdir() if path.is_file()):
+        if file.name.startswith("."):
+            continue
+        globs.append(f"mods/{file.name}")
+    return globs
 
 
 def sign_manifest(manifest_path: Path, signature_path: Path, private_key: Path) -> None:
@@ -205,6 +219,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--channel", default="experimental")
     parser.add_argument("--private-key", type=Path)
     parser.add_argument("--managed-dir", action="append", dest="managed_dirs")
+    parser.add_argument("--delete-glob", action="append", dest="delete_globs")
+    parser.add_argument("--no-disabled-client-delete-globs", action="store_true")
+    parser.add_argument("--required-updater-version", default="0.1.5")
+    parser.add_argument("--updater-download-url")
+    parser.add_argument("--updater-page-url")
+    parser.add_argument("--updater-message")
     return parser.parse_args()
 
 
@@ -213,11 +233,21 @@ def main() -> int:
     source = args.source.resolve()
     output = args.output.resolve()
     managed_dirs = args.managed_dirs or DEFAULT_MANAGED_DIRS
+    delete_globs = args.delete_globs or []
+    if not args.no_disabled_client_delete_globs:
+        delete_globs.extend(build_disabled_client_delete_globs(source))
+    delete_globs = sorted(set(delete_globs))
 
     for managed_dir in managed_dirs:
         normalized = Path(managed_dir).as_posix().strip("/")
         if not normalized or "/" in normalized or normalized in BLOCKED_TOP_LEVEL or normalized.startswith("world"):
             raise ValueError(f"invalid managed dir: {managed_dir}")
+
+    for glob in delete_globs:
+        normalized = Path(glob).as_posix().strip("/")
+        first = normalized.split("/", 1)[0]
+        if not normalized or first not in managed_dirs or ".." in Path(normalized).parts or normalized.startswith("/"):
+            raise ValueError(f"invalid delete glob: {glob}")
 
     output.mkdir(parents=True, exist_ok=True)
     release_number = args.release_number or int(datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S"))
@@ -230,6 +260,7 @@ def main() -> int:
         version=args.version,
         release_number=release_number,
         managed_dirs=managed_dirs,
+        delete_globs=delete_globs,
     )
 
     manifest_path = output / "manifest.json"
@@ -247,9 +278,15 @@ def main() -> int:
         "releaseNumber": release_number,
         "manifestUrl": f"{args.base_url.rstrip('/')}/manifest.json",
         "signatureUrl": f"{args.base_url.rstrip('/')}/manifest.json.sig",
-        "requiredUpdaterVersion": "0.1.0",
+        "requiredUpdaterVersion": args.required_updater_version,
         "changelogUrl": f"{args.base_url.rstrip('/')}/changelog.html",
     }
+    if args.updater_download_url:
+        latest["updaterDownloadUrl"] = args.updater_download_url
+    if args.updater_page_url:
+        latest["updaterPageUrl"] = args.updater_page_url
+    if args.updater_message:
+        latest["updaterMessage"] = args.updater_message
     atomic_write_json(latest_path, latest)
 
     print(f"files={len(manifest['files'])}")

@@ -10,6 +10,9 @@ public sealed class LatestIndex
     public string SignatureUrl { get; set; } = "";
     public string RequiredUpdaterVersion { get; set; } = "";
     public string ChangelogUrl { get; set; } = "";
+    public string UpdaterDownloadUrl { get; set; } = "";
+    public string UpdaterPageUrl { get; set; } = "";
+    public string UpdaterMessage { get; set; } = "";
 }
 
 public sealed class PackManifest
@@ -26,6 +29,7 @@ public sealed class PackManifest
 public sealed class ManifestDeletePolicy
 {
     public bool Enabled { get; set; } = true;
+    public List<string> Globs { get; set; } = [];
 }
 
 public sealed class ManifestFile
@@ -64,4 +68,43 @@ public sealed class FileHashCacheEntry
     public long Size { get; set; }
     public long LastWriteTimeUtcTicks { get; set; }
     public string Sha256 { get; set; } = "";
+}
+
+public sealed class UpdaterOutdatedException : Exception
+{
+    public UpdaterOutdatedException(
+        string currentVersion,
+        string requiredVersion,
+        string downloadUrl,
+        string pageUrl,
+        string customMessage)
+        : base(BuildMessage(currentVersion, requiredVersion, downloadUrl, pageUrl, customMessage))
+    {
+        CurrentVersion = currentVersion;
+        RequiredVersion = requiredVersion;
+        DownloadUrl = downloadUrl;
+        PageUrl = pageUrl;
+        CustomMessage = customMessage;
+    }
+
+    public string CurrentVersion { get; }
+    public string RequiredVersion { get; }
+    public string DownloadUrl { get; }
+    public string PageUrl { get; }
+    public string CustomMessage { get; }
+
+    private static string BuildMessage(
+        string currentVersion,
+        string requiredVersion,
+        string downloadUrl,
+        string pageUrl,
+        string customMessage)
+    {
+        var text = string.IsNullOrWhiteSpace(customMessage)
+            ? "Обновите обновлятор, чтобы поставить свежую experimental-сборку."
+            : customMessage.Trim();
+        var target = !string.IsNullOrWhiteSpace(downloadUrl) ? downloadUrl : pageUrl;
+        var suffix = string.IsNullOrWhiteSpace(target) ? "" : Environment.NewLine + target;
+        return $"{text}{Environment.NewLine}Текущая версия: {currentVersion}. Требуется: {requiredVersion}.{suffix}";
+    }
 }
