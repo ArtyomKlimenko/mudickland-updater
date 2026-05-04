@@ -31,13 +31,10 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item updater.json artifacts/win-x64/updater.json
-          Copy-Item updater.example.json artifacts/win-x64/updater.example.json
-          Copy-Item updater.localhost.json artifacts/win-x64/updater.localhost.json
-          Copy-Item updater.82-http.example.json artifacts/win-x64/updater.82-http.example.json
       - name: Package artifact
         shell: pwsh
         run: |
-          Compress-Archive -Path artifacts/win-x64/* -DestinationPath MuDickLand.Updater-win-x64.zip -Force
+          Compress-Archive -Path artifacts/win-x64/MuDickLand.Updater.exe, artifacts/win-x64/updater.json -DestinationPath MuDickLand.Updater-win-x64.zip -Force
           Get-FileHash MuDickLand.Updater-win-x64.zip -Algorithm SHA256 | ForEach-Object {
             "$($_.Hash.ToLower())  MuDickLand.Updater-win-x64.zip" | Out-File -Encoding ascii MuDickLand.Updater-win-x64.zip.sha256
           }

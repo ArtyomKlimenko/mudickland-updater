@@ -19,7 +19,7 @@ Minecraft**, **не обходит лицензирование**, **не сод
 
 ## Скачать
 
-Актуальная публичная сборка updater: `0.1.5`.
+Актуальная публичная сборка updater: `0.1.6`.
 
 Актуальный релиз на GitHub:
 
@@ -33,6 +33,10 @@ http://82.26.151.254/downloads/updater/MuDickLand.Updater-win-x64.zip
 
 - `MuDickLand.Updater-win-x64.zip` — updater для Windows x64.
 - `MuDickLand.Updater-win-x64.zip.sha256` — контрольная сумма архива.
+
+Пользовательский архив содержит только `MuDickLand.Updater.exe` и готовый
+`updater.json`. Файлы `updater.example.json`, `updater.localhost.json` и `.pdb`
+остаются только в репозитории/артефактах разработки.
 
 Начиная с `0.1.4`, updater проверяет поле `requiredUpdaterVersion` в
 `latest.json`. Если для нового manifest потребуется более свежий updater,
